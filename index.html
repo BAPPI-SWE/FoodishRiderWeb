@@ -8,9 +8,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .active-tab { color: #2563eb; border-top: 2px solid #2563eb; }
-        body { background-color: #f3f4f6; padding-bottom: 70px; }
+        body { background-color: #f3f4f6; padding-bottom: 80px; }
         .card { background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 16px; margin-bottom: 16px; }
-        [v-cloak] { display: none; }
+        .status-pill { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -22,22 +22,10 @@
 
         <div id="auth-screen" class="hidden min-h-screen flex flex-col items-center justify-center p-6">
             <h1 class="text-3xl font-bold text-blue-600 mb-2">Yumzy Rider</h1>
-            <p class="text-gray-500 mb-8">Sign in to start delivering</p>
-            <button onclick="login()" class="bg-white border border-gray-300 px-6 py-3 rounded-xl shadow-sm flex items-center gap-3 hover:bg-gray-50 transition">
+            <button onclick="login()" class="bg-white border px-6 py-3 rounded-xl shadow-sm flex items-center gap-3 mt-8">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" width="20">
                 <span class="font-medium">Sign in with Google</span>
             </button>
-        </div>
-
-        <div id="onboarding-screen" class="hidden p-6 max-w-md mx-auto">
-            <h2 class="text-2xl font-bold mb-4">Complete Your Profile</h2>
-            <div class="space-y-4">
-                <input type="text" id="reg-phone" placeholder="Phone Number" class="w-full p-3 border rounded-lg">
-                <input type="text" id="reg-vehicle" placeholder="Vehicle (e.g. Bike)" class="w-full p-3 border rounded-lg">
-                <h3 class="font-bold mt-4">Serviceable Locations</h3>
-                <div id="location-list" class="space-y-2"></div>
-                <button onclick="saveProfile()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold mt-6">Start Delivering</button>
-            </div>
         </div>
 
         <div id="main-screen" class="hidden">
@@ -59,10 +47,15 @@
                 </div>
 
                 <div id="history-view" class="view hidden">
-                    <div id="summary-card" class="card bg-blue-50 text-center flex flex-col gap-2">
-                        <div class="flex justify-around">
-                            <div><p class="text-xs text-gray-500">Total Orders</p><p id="total-count" class="text-xl font-bold">0</p></div>
-                            <div><p class="text-xs text-gray-500">Earnings</p><p id="total-earnings" class="text-xl font-bold text-blue-600">৳0</p></div>
+                    <div id="summary-card" class="card bg-slate-50 border border-slate-200">
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                            <div><p class="text-xs text-gray-500">Total Orders</p><p id="total-count" class="text-lg font-bold">0</p></div>
+                            <div><p class="text-xs text-gray-500">Total Earnings</p><p id="total-earnings" class="text-lg font-bold text-blue-600">৳0</p></div>
+                        </div>
+                        <div class="border-t my-3"></div>
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                            <div><p class="text-[10px] text-gray-400">Collected (COD)</p><p id="cod-earnings" class="text-sm font-bold">৳0</p></div>
+                            <div><p class="text-[10px] text-gray-400">Online Paid</p><p id="online-earnings" class="text-sm font-bold text-green-600">৳0</p></div>
                         </div>
                     </div>
                     <div id="history-container" class="space-y-4"></div>
@@ -70,9 +63,9 @@
 
                 <div id="profile-view" class="view hidden">
                     <div class="card flex flex-col items-center">
-                        <img id="user-img" src="" class="w-20 h-20 rounded-full mb-3">
+                        <img id="user-img" src="" class="w-20 h-20 rounded-full mb-3 shadow">
                         <h2 id="user-name" class="font-bold text-lg"></h2>
-                        <p id="user-email" class="text-gray-500"></p>
+                        <p id="user-email" class="text-gray-500 text-sm"></p>
                     </div>
                     <button onclick="logout()" class="w-full text-red-600 font-bold p-4 card">Sign Out</button>
                 </div>
@@ -80,16 +73,16 @@
 
             <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2">
                 <button onclick="switchTab('new-orders')" class="tab-btn flex flex-col items-center gap-1 active-tab">
-                    <i class="fas fa-list text-lg"></i><span class="text-xs">New</span>
+                    <i class="fas fa-list"></i><span class="text-[10px]">New</span>
                 </button>
                 <button onclick="switchTab('deliveries')" class="tab-btn flex flex-col items-center gap-1 text-gray-400">
-                    <i class="fas fa-motorcycle text-lg"></i><span class="text-xs">Active</span>
+                    <i class="fas fa-motorcycle"></i><span class="text-[10px]">Active</span>
                 </button>
                 <button onclick="switchTab('history')" class="tab-btn flex flex-col items-center gap-1 text-gray-400">
-                    <i class="fas fa-history text-lg"></i><span class="text-xs">History</span>
+                    <i class="fas fa-history"></i><span class="text-[10px]">History</span>
                 </button>
                 <button onclick="switchTab('profile')" class="tab-btn flex flex-col items-center gap-1 text-gray-400">
-                    <i class="fas fa-user text-lg"></i><span class="text-xs">Profile</span>
+                    <i class="fas fa-user"></i><span class="text-[10px]">Profile</span>
                 </button>
             </nav>
         </div>
@@ -98,7 +91,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, onSnapshot, getDocs, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, collection, query, where, onSnapshot, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBzebys-DelOL7qGTygxnJfFFA7QTNhqYM",
@@ -116,68 +109,24 @@
 
         let currentUser = null;
         let riderProfile = null;
-        let activeListeners = [];
-
-        // 1. Auth Logic
-        window.login = async () => {
-            try { await signInWithPopup(auth, provider); } 
-            catch (e) { alert(e.message); }
-        };
-
-        window.logout = () => signOut(auth);
 
         onAuthStateChanged(auth, async (user) => {
             currentUser = user;
             document.getElementById('loader').classList.add('hidden');
             if (user) {
-                const docRef = doc(db, "riders", user.uid);
-                const docSnap = await getDoc(docRef);
+                const docSnap = await getDoc(doc(db, "riders", user.uid));
                 if (docSnap.exists()) {
                     riderProfile = docSnap.data();
                     showScreen('main-screen');
                     initRiderApp();
                 } else {
-                    showScreen('onboarding-screen');
-                    loadLocations();
+                    alert("Rider profile not found. Please create one in the mobile app.");
                 }
             } else {
                 showScreen('auth-screen');
             }
         });
 
-        // 2. Onboarding Logic
-        async function loadLocations() {
-            const snap = await getDocs(collection(db, "locations"));
-            const list = document.getElementById('location-list');
-            list.innerHTML = '';
-            snap.forEach(d => {
-                const loc = d.data().name;
-                list.innerHTML += `<label class="flex items-center gap-3 p-3 border rounded-lg">
-                    <input type="checkbox" name="loc" value="${loc}"> ${loc}
-                </label>`;
-            });
-        }
-
-        window.saveProfile = async () => {
-            const phone = document.getElementById('reg-phone').value;
-            const vehicle = document.getElementById('reg-vehicle').value;
-            const selected = Array.from(document.querySelectorAll('input[name="loc"]:checked')).map(cb => cb.value);
-            
-            if(!phone || !vehicle || selected.length === 0) return alert("Fill all fields");
-
-            const profile = {
-                uid: currentUser.uid,
-                name: currentUser.displayName,
-                phone: phone,
-                vehicle: vehicle,
-                serviceableLocations: selected,
-                isAvailable: false
-            };
-            await setDoc(doc(db, "riders", currentUser.uid), profile);
-            location.reload();
-        };
-
-        // 3. Core App Functions
         function initRiderApp() {
             updateProfileUI();
             listenToNewOrders();
@@ -193,44 +142,77 @@
             document.getElementById('availability-text').innerText = riderProfile.isAvailable ? 'Online' : 'Offline';
         }
 
-        window.toggleAvailability = async (status) => {
-            await updateDoc(doc(db, "riders", currentUser.uid), { isAvailable: status });
-            document.getElementById('availability-text').innerText = status ? 'Online' : 'Offline';
-        };
-
-        function listenToNewOrders() {
-            if (!riderProfile.isAvailable) {
-                document.getElementById('orders-container').innerHTML = '<p class="text-center text-gray-500">Go online to see orders</p>';
-                return;
-            }
-
-            const q = query(
-                collection(db, "orders"), 
-                where("orderStatus", "==", "Pending"),
-                where("userBaseLocation", "in", riderProfile.serviceableLocations)
-            );
-
-            onSnapshot(q, (snapshot) => {
-                const container = document.getElementById('orders-container');
-                container.innerHTML = snapshot.empty ? '<p class="text-center text-gray-500">No pending orders</p>' : '';
-                snapshot.forEach(doc => renderOrderCard(doc, container, 'new'));
-            });
+        // Logic to construct full address exactly like Mobile App
+        function formatAddress(order) {
+            return `Building: ${order.building || ''}, Floor: ${order.floor || ''}, Room: ${order.room || ''}<br>${order.userSubLocation || ''}, ${order.userBaseLocation || ''}`;
         }
 
-        function listenToActiveDeliveries() {
-            const q = query(
-                collection(db, "orders"), 
-                where("riderId", "==", currentUser.uid),
-                where("orderStatus", "in", ["Accepted", "On the way"])
-            );
+        // Logic to render Order Card with all missing info
+        function renderOrderCard(d, container, type) {
+            const order = d.data();
+            const id = d.id;
+            const fullAddress = formatAddress(order);
+            const dateStr = order.createdAt?.toDate().toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }) || '';
 
-            onSnapshot(q, (snapshot) => {
-                const container = document.getElementById('active-container');
-                container.innerHTML = snapshot.empty ? '<p class="text-center text-gray-500">No active deliveries</p>' : '';
-                snapshot.forEach(doc => renderOrderCard(doc, container, 'active'));
-            });
+            // Mapping Items with Mini Restaurant Names and Partner Status
+            const itemsHtml = order.items.map(item => {
+                const miniRes = item.miniResName ? `<span class="text-blue-500">(${item.miniResName})</span>` : '';
+                const statusColor = item.partnerStatus === 'Ready' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700';
+                const statusBadge = item.partnerStatus ? `<span class="status-pill ${statusColor} ml-2">${item.partnerStatus}</span>` : '';
+                return `<li class="mb-1">${item.quantity}x ${item.itemName} ${miniRes} ${statusBadge}</li>`;
+            }).join('');
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="flex justify-between items-start border-b pb-2 mb-3">
+                    <div>
+                        <h3 class="font-bold text-gray-900">${order.restaurantName}</h3>
+                        <p class="text-[10px] text-gray-400">${dateStr}</p>
+                    </div>
+                    ${type !== 'history' ? `
+                        <div class="flex gap-2">
+                            <a href="tel:${order.userPhone}" class="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100"><i class="fas fa-phone-alt"></i></a>
+                            <a href="https://wa.me/88${order.userPhone.replace(/\D/g,'')}" target="_blank" class="w-9 h-9 rounded-full bg-green-50 flex items-center justify-center text-green-600 border border-green-100"><i class="fab fa-whatsapp"></i></a>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="space-y-3 mb-4">
+                    <div class="flex gap-3">
+                        <i class="fas fa-user text-gray-300 mt-1"></i>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase font-bold tracking-wider">Customer</p>
+                            <p class="text-sm font-semibold">${order.userName} (${order.userPhone})</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <i class="fas fa-map-marker-alt text-red-300 mt-1"></i>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase font-bold tracking-wider">Deliver To</p>
+                            <p class="text-sm text-gray-700 leading-tight">${fullAddress}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-3 rounded-lg mb-4">
+                    <p class="text-xs font-bold text-gray-400 uppercase mb-2">Items</p>
+                    <ul class="text-xs text-gray-600 list-none">${itemsHtml}</ul>
+                </div>
+
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-sm font-bold text-gray-700">Total to Collect:</span>
+                    <span class="text-lg font-black text-blue-600">৳${order.totalPrice} <small class="text-[10px] text-gray-400">(${order.payment})</small></span>
+                </div>
+                
+                <div id="btn-container-${id}">
+                    ${getActionButtons(id, order.orderStatus, type)}
+                </div>
+            `;
+            container.appendChild(card);
         }
 
+        // Logic for Detailed History Summary
         async function loadHistory() {
             const q = query(
                 collection(db, "orders"),
@@ -241,52 +223,28 @@
             
             const snap = await getDocs(q);
             const container = document.getElementById('history-container');
-            let total = 0;
-            container.innerHTML = '';
-            snap.forEach(doc => {
-                total += doc.data().totalPrice;
-                renderOrderCard(doc, container, 'history');
-            });
-            document.getElementById('total-count').innerText = snap.size;
-            document.getElementById('total-earnings').innerText = `৳${total.toFixed(2)}`;
-        }
-
-        // 4. UI Rendering Helpers
-        function renderOrderCard(d, container, type) {
-            const order = d.data();
-            const id = d.id;
-            const date = order.createdAt?.toDate().toLocaleString() || '';
-            const itemsHtml = order.items.map(i => `<li>${i.quantity}x ${i.itemName}</li>`).join('');
+            let total = 0, cod = 0, online = 0;
             
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.innerHTML = `
-                <div class="flex justify-between border-b pb-2 mb-2">
-                    <h3 class="font-bold">${order.restaurantName}</h3>
-                    <span class="text-xs text-gray-400">${date}</span>
-                </div>
-                <p class="text-sm font-medium"><i class="fas fa-user mr-2 text-gray-400"></i>${order.userName}</p>
-                <p class="text-sm text-gray-600 mb-2"><i class="fas fa-map-marker-alt mr-2 text-gray-400"></i>${order.building}, ${order.userBaseLocation}</p>
-                <ul class="text-xs text-gray-500 ml-6 list-disc mb-3">${itemsHtml}</ul>
-                <div class="flex justify-between items-center mb-3">
-                    <span class="font-bold text-blue-600">৳${order.totalPrice} (${order.payment})</span>
-                    ${type !== 'history' ? `
-                        <div class="flex gap-2">
-                            <a href="tel:${order.userPhone}" class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600"><i class="fas fa-phone"></i></a>
-                            <a href="https://wa.me/88${order.userPhone}" target="_blank" class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600"><i class="fab fa-whatsapp"></i></a>
-                        </div>
-                    ` : ''}
-                </div>
-                ${getActionButtons(id, order.orderStatus, type)}
-            `;
-            container.appendChild(card);
+            container.innerHTML = '';
+            snap.forEach(d => {
+                const order = d.data();
+                total += order.totalPrice;
+                if(order.payment === 'COD') cod += order.totalPrice;
+                else online += order.totalPrice;
+                renderOrderCard(d, container, 'history');
+            });
+
+            document.getElementById('total-count').innerText = snap.size;
+            document.getElementById('total-earnings').innerText = `৳${total.toFixed(1)}`;
+            document.getElementById('cod-earnings').innerText = `৳${cod.toFixed(1)}`;
+            document.getElementById('online-earnings').innerText = `৳${online.toFixed(1)}`;
         }
 
         function getActionButtons(id, status, type) {
-            if (type === 'history') return `<span class="text-green-600 text-xs font-bold"><i class="fas fa-check-circle mr-1"></i> Delivered</span>`;
-            if (status === 'Pending') return `<button onclick="updateStatus('${id}', 'Accepted')" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold">Accept Order</button>`;
-            if (status === 'Accepted') return `<button onclick="updateStatus('${id}', 'On the way')" class="w-full bg-orange-500 text-white py-2 rounded-lg font-bold">Mark as Picked Up</button>`;
-            if (status === 'On the way') return `<button onclick="updateStatus('${id}', 'Delivered')" class="w-full bg-green-600 text-white py-2 rounded-lg font-bold">Mark as Delivered</button>`;
+            if (type === 'history') return `<div class="text-center py-1 border-t mt-2"><span class="text-green-600 text-xs font-bold italic">✓ Delivered successfully</span></div>`;
+            if (status === 'Pending') return `<button onclick="updateStatus('${id}', 'Accepted')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg transition">Accept Order</button>`;
+            if (status === 'Accepted') return `<button onclick="updateStatus('${id}', 'On the way')" class="w-full bg-orange-500 text-white py-3 rounded-xl font-bold">Mark as Picked Up</button>`;
+            if (status === 'On the way') return `<button onclick="updateStatus('${id}', 'Delivered')" class="w-full bg-green-600 text-white py-3 rounded-xl font-bold">Mark as Delivered</button>`;
             return '';
         }
 
@@ -296,22 +254,44 @@
                 updates.riderId = currentUser.uid;
                 updates.riderName = currentUser.displayName;
             }
-            await updateDoc(doc(db, "orders", orderId), updates);
-            if(status === 'Delivered') loadHistory();
+            try {
+                await updateDoc(doc(db, "orders", orderId), updates);
+                if(status === 'Delivered') loadHistory();
+            } catch(e) { alert("Error updating order: " + e.message); }
         };
 
-        // 5. Navigation Logic
+        window.login = () => signInWithPopup(auth, provider);
+        window.logout = () => signOut(auth);
+        window.toggleAvailability = (s) => updateDoc(doc(db, "riders", currentUser.uid), { isAvailable: s });
+
+        function listenToNewOrders() {
+            const q = query(collection(db, "orders"), where("orderStatus", "==", "Pending"), where("userBaseLocation", "in", riderProfile.serviceableLocations));
+            onSnapshot(q, (s) => {
+                const c = document.getElementById('orders-container');
+                c.innerHTML = s.empty ? '<p class="text-center py-10 text-gray-400">No new orders in your area</p>' : '';
+                s.forEach(d => renderOrderCard(d, c, 'new'));
+            });
+        }
+
+        function listenToActiveDeliveries() {
+            const q = query(collection(db, "orders"), where("riderId", "==", currentUser.uid), where("orderStatus", "in", ["Accepted", "On the way"]));
+            onSnapshot(q, (s) => {
+                const c = document.getElementById('active-container');
+                c.innerHTML = s.empty ? '<p class="text-center py-10 text-gray-400">No active tasks</p>' : '';
+                s.forEach(d => renderOrderCard(d, c, 'active'));
+            });
+        }
+
         window.switchTab = (tab) => {
             document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab', 'text-blue-600'));
-            
             document.getElementById(`${tab}-view`).classList.remove('hidden');
-            event.currentTarget.classList.add('active-tab');
+            event.currentTarget.classList.add('active-tab', 'text-blue-600');
             document.getElementById('header-title').innerText = tab.replace('-', ' ').toUpperCase();
         };
 
         function showScreen(id) {
-            ['auth-screen', 'onboarding-screen', 'main-screen'].forEach(s => document.getElementById(s).classList.add('hidden'));
+            ['auth-screen', 'main-screen'].forEach(s => document.getElementById(s).classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
         }
     </script>
