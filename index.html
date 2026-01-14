@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yumzy Rider Web</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .active-tab { color: #2563eb; border-top: 2px solid #2563eb; }
+        body { background-color: #f3f4f6; padding-bottom: 70px; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 16px; margin-bottom: 16px; }
+        [v-cloak] { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <div id="loader" class="fixed inset-0 bg-white flex items-center justify-center z-50">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+
+        <div id="auth-screen" class="hidden min-h-screen flex flex-col items-center justify-center p-6">
+            <h1 class="text-3xl font-bold text-blue-600 mb-2">Yumzy Rider</h1>
+            <p class="text-gray-500 mb-8">Sign in to start delivering</p>
+            <button onclick="login()" class="bg-white border border-gray-300 px-6 py-3 rounded-xl shadow-sm flex items-center gap-3 hover:bg-gray-50 transition">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" width="20">
+                <span class="font-medium">Sign in with Google</span>
+            </button>
+        </div>
+
+        <div id="onboarding-screen" class="hidden p-6 max-w-md mx-auto">
+            <h2 class="text-2xl font-bold mb-4">Complete Your Profile</h2>
+            <div class="space-y-4">
+                <input type="text" id="reg-phone" placeholder="Phone Number" class="w-full p-3 border rounded-lg">
+                <input type="text" id="reg-vehicle" placeholder="Vehicle (e.g. Bike)" class="w-full p-3 border rounded-lg">
+                <h3 class="font-bold mt-4">Serviceable Locations</h3>
+                <div id="location-list" class="space-y-2"></div>
+                <button onclick="saveProfile()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold mt-6">Start Delivering</button>
+            </div>
+        </div>
+
+        <div id="main-screen" class="hidden">
+            <header class="bg-white p-4 shadow-sm sticky top-0 z-10 flex justify-between items-center">
+                <h1 class="text-xl font-bold text-blue-600" id="header-title">New Orders</h1>
+                <div class="flex items-center gap-2">
+                    <span id="availability-text" class="text-sm font-medium">Offline</span>
+                    <input type="checkbox" id="availability-toggle" onchange="toggleAvailability(this.checked)" class="w-10 h-5 bg-gray-200 rounded-full appearance-none checked:bg-green-500 transition relative cursor-pointer">
+                </div>
+            </header>
+
+            <main class="p-4">
+                <div id="new-orders-view" class="view">
+                    <div id="orders-container" class="space-y-4"></div>
+                </div>
+
+                <div id="deliveries-view" class="view hidden">
+                    <div id="active-container" class="space-y-4"></div>
+                </div>
+
+                <div id="history-view" class="view hidden">
+                    <div id="summary-card" class="card bg-blue-50 text-center flex flex-col gap-2">
+                        <div class="flex justify-around">
+                            <div><p class="text-xs text-gray-500">Total Orders</p><p id="total-count" class="text-xl font-bold">0</p></div>
+                            <div><p class="text-xs text-gray-500">Earnings</p><p id="total-earnings" class="text-xl font-bold text-blue-600">৳0</p></div>
+                        </div>
+                    </div>
+                    <div id="history-container" class="space-y-4"></div>
+                </div>
+
+                <div id="profile-view" class="view hidden">
+                    <div class="card flex flex-col items-center">
+                        <img id="user-img" src="" class="w-20 h-20 rounded-full mb-3">
+                        <h2 id="user-name" class="font-bold text-lg"></h2>
+                        <p id="user-email" class="text-gray-500"></p>
+                    </div>
+                    <button onclick="logout()" class="w-full text-red-600 font-bold p-4 card">Sign Out</button>
+                </div>
+            </main>
+
+            <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2">
+                <button onclick="switchTab('new-orders')" class="tab-btn flex flex-col items-center gap-1 active-tab">
+                    <i class="fas fa-list text-lg"></i><span class="text-xs">New</span>
+                </button>
+                <button onclick="switchTab('deliveries')" class="tab-btn flex flex-col items-center gap-1 text-gray-400">
+                    <i class="fas fa-motorcycle text-lg"></i><span class="text-xs">Active</span>
+                </button>
+                <button onclick="switchTab('history')" class="tab-btn flex flex-col items-center gap-1 text-gray-400">
+                    <i class="fas fa-history text-lg"></i><span class="text-xs">History</span>
+                </button>
+                <button onclick="switchTab('profile')" class="tab-btn flex flex-col items-center gap-1 text-gray-400">
+                    <i class="fas fa-user text-lg"></i><span class="text-xs">Profile</span>
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, onSnapshot, getDocs, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzebys-DelOL7qGTygxnJfFFA7QTNhqYM",
+            authDomain: "yumzy-bappi.firebaseapp.com",
+            projectId: "yumzy-bappi",
+            storageBucket: "yumzy-bappi.firebasestorage.app",
+            messagingSenderId: "1096387078386",
+            appId: "1:1096387078386:web:d5434067d07c6e3466886b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        let currentUser = null;
+        let riderProfile = null;
+        let activeListeners = [];
+
+        // 1. Auth Logic
+        window.login = async () => {
+            try { await signInWithPopup(auth, provider); } 
+            catch (e) { alert(e.message); }
+        };
+
+        window.logout = () => signOut(auth);
+
+        onAuthStateChanged(auth, async (user) => {
+            currentUser = user;
+            document.getElementById('loader').classList.add('hidden');
+            if (user) {
+                const docRef = doc(db, "riders", user.uid);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    riderProfile = docSnap.data();
+                    showScreen('main-screen');
+                    initRiderApp();
+                } else {
+                    showScreen('onboarding-screen');
+                    loadLocations();
+                }
+            } else {
+                showScreen('auth-screen');
+            }
+        });
+
+        // 2. Onboarding Logic
+        async function loadLocations() {
+            const snap = await getDocs(collection(db, "locations"));
+            const list = document.getElementById('location-list');
+            list.innerHTML = '';
+            snap.forEach(d => {
+                const loc = d.data().name;
+                list.innerHTML += `<label class="flex items-center gap-3 p-3 border rounded-lg">
+                    <input type="checkbox" name="loc" value="${loc}"> ${loc}
+                </label>`;
+            });
+        }
+
+        window.saveProfile = async () => {
+            const phone = document.getElementById('reg-phone').value;
+            const vehicle = document.getElementById('reg-vehicle').value;
+            const selected = Array.from(document.querySelectorAll('input[name="loc"]:checked')).map(cb => cb.value);
+            
+            if(!phone || !vehicle || selected.length === 0) return alert("Fill all fields");
+
+            const profile = {
+                uid: currentUser.uid,
+                name: currentUser.displayName,
+                phone: phone,
+                vehicle: vehicle,
+                serviceableLocations: selected,
+                isAvailable: false
+            };
+            await setDoc(doc(db, "riders", currentUser.uid), profile);
+            location.reload();
+        };
+
+        // 3. Core App Functions
+        function initRiderApp() {
+            updateProfileUI();
+            listenToNewOrders();
+            listenToActiveDeliveries();
+            loadHistory();
+        }
+
+        function updateProfileUI() {
+            document.getElementById('user-name').innerText = riderProfile.name;
+            document.getElementById('user-email').innerText = currentUser.email;
+            document.getElementById('user-img').src = currentUser.photoURL;
+            document.getElementById('availability-toggle').checked = riderProfile.isAvailable;
+            document.getElementById('availability-text').innerText = riderProfile.isAvailable ? 'Online' : 'Offline';
+        }
+
+        window.toggleAvailability = async (status) => {
+            await updateDoc(doc(db, "riders", currentUser.uid), { isAvailable: status });
+            document.getElementById('availability-text').innerText = status ? 'Online' : 'Offline';
+        };
+
+        function listenToNewOrders() {
+            if (!riderProfile.isAvailable) {
+                document.getElementById('orders-container').innerHTML = '<p class="text-center text-gray-500">Go online to see orders</p>';
+                return;
+            }
+
+            const q = query(
+                collection(db, "orders"), 
+                where("orderStatus", "==", "Pending"),
+                where("userBaseLocation", "in", riderProfile.serviceableLocations)
+            );
+
+            onSnapshot(q, (snapshot) => {
+                const container = document.getElementById('orders-container');
+                container.innerHTML = snapshot.empty ? '<p class="text-center text-gray-500">No pending orders</p>' : '';
+                snapshot.forEach(doc => renderOrderCard(doc, container, 'new'));
+            });
+        }
+
+        function listenToActiveDeliveries() {
+            const q = query(
+                collection(db, "orders"), 
+                where("riderId", "==", currentUser.uid),
+                where("orderStatus", "in", ["Accepted", "On the way"])
+            );
+
+            onSnapshot(q, (snapshot) => {
+                const container = document.getElementById('active-container');
+                container.innerHTML = snapshot.empty ? '<p class="text-center text-gray-500">No active deliveries</p>' : '';
+                snapshot.forEach(doc => renderOrderCard(doc, container, 'active'));
+            });
+        }
+
+        async function loadHistory() {
+            const q = query(
+                collection(db, "orders"),
+                where("riderId", "==", currentUser.uid),
+                where("orderStatus", "==", "Delivered"),
+                orderBy("createdAt", "desc")
+            );
+            
+            const snap = await getDocs(q);
+            const container = document.getElementById('history-container');
+            let total = 0;
+            container.innerHTML = '';
+            snap.forEach(doc => {
+                total += doc.data().totalPrice;
+                renderOrderCard(doc, container, 'history');
+            });
+            document.getElementById('total-count').innerText = snap.size;
+            document.getElementById('total-earnings').innerText = `৳${total.toFixed(2)}`;
+        }
+
+        // 4. UI Rendering Helpers
+        function renderOrderCard(d, container, type) {
+            const order = d.data();
+            const id = d.id;
+            const date = order.createdAt?.toDate().toLocaleString() || '';
+            const itemsHtml = order.items.map(i => `<li>${i.quantity}x ${i.itemName}</li>`).join('');
+            
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="flex justify-between border-b pb-2 mb-2">
+                    <h3 class="font-bold">${order.restaurantName}</h3>
+                    <span class="text-xs text-gray-400">${date}</span>
+                </div>
+                <p class="text-sm font-medium"><i class="fas fa-user mr-2 text-gray-400"></i>${order.userName}</p>
+                <p class="text-sm text-gray-600 mb-2"><i class="fas fa-map-marker-alt mr-2 text-gray-400"></i>${order.building}, ${order.userBaseLocation}</p>
+                <ul class="text-xs text-gray-500 ml-6 list-disc mb-3">${itemsHtml}</ul>
+                <div class="flex justify-between items-center mb-3">
+                    <span class="font-bold text-blue-600">৳${order.totalPrice} (${order.payment})</span>
+                    ${type !== 'history' ? `
+                        <div class="flex gap-2">
+                            <a href="tel:${order.userPhone}" class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600"><i class="fas fa-phone"></i></a>
+                            <a href="https://wa.me/88${order.userPhone}" target="_blank" class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600"><i class="fab fa-whatsapp"></i></a>
+                        </div>
+                    ` : ''}
+                </div>
+                ${getActionButtons(id, order.orderStatus, type)}
+            `;
+            container.appendChild(card);
+        }
+
+        function getActionButtons(id, status, type) {
+            if (type === 'history') return `<span class="text-green-600 text-xs font-bold"><i class="fas fa-check-circle mr-1"></i> Delivered</span>`;
+            if (status === 'Pending') return `<button onclick="updateStatus('${id}', 'Accepted')" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold">Accept Order</button>`;
+            if (status === 'Accepted') return `<button onclick="updateStatus('${id}', 'On the way')" class="w-full bg-orange-500 text-white py-2 rounded-lg font-bold">Mark as Picked Up</button>`;
+            if (status === 'On the way') return `<button onclick="updateStatus('${id}', 'Delivered')" class="w-full bg-green-600 text-white py-2 rounded-lg font-bold">Mark as Delivered</button>`;
+            return '';
+        }
+
+        window.updateStatus = async (orderId, status) => {
+            const updates = { orderStatus: status };
+            if (status === 'Accepted') {
+                updates.riderId = currentUser.uid;
+                updates.riderName = currentUser.displayName;
+            }
+            await updateDoc(doc(db, "orders", orderId), updates);
+            if(status === 'Delivered') loadHistory();
+        };
+
+        // 5. Navigation Logic
+        window.switchTab = (tab) => {
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab', 'text-blue-600'));
+            
+            document.getElementById(`${tab}-view`).classList.remove('hidden');
+            event.currentTarget.classList.add('active-tab');
+            document.getElementById('header-title').innerText = tab.replace('-', ' ').toUpperCase();
+        };
+
+        function showScreen(id) {
+            ['auth-screen', 'onboarding-screen', 'main-screen'].forEach(s => document.getElementById(s).classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
