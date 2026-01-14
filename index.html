@@ -20,10 +20,11 @@
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
 
-        <div id="auth-screen" class="hidden min-h-screen flex flex-col items-center justify-center p-6">
-            <h1 class="text-3xl font-bold text-blue-600 mb-2">Yumzy Rider</h1>
-            <button onclick="login()" class="bg-white border px-6 py-3 rounded-xl shadow-sm flex items-center gap-3 mt-8">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" width="20">
+        <div id="auth-screen" class="hidden min-h-screen flex flex-col items-center justify-center p-6 text-center">
+            <h1 class="text-3xl font-bold text-blue-600 mb-2">Foodish Rider 🚴‍♀️</h1>
+            <p class="text-gray-500">Official Delivery Partner App</p>
+            <button onclick="login()" class="bg-white border px-6 py-3 rounded-xl shadow-sm flex items-center gap-3 mt-8 hover:bg-gray-50 transition">
+           
                 <span class="font-medium">Sign in with Google</span>
             </button>
         </div>
@@ -32,7 +33,7 @@
             <header class="bg-white p-4 shadow-sm sticky top-0 z-10 flex justify-between items-center">
                 <h1 class="text-xl font-bold text-blue-600" id="header-title">New Orders</h1>
                 <div class="flex items-center gap-2">
-                    <span id="availability-text" class="text-sm font-medium">Offline</span>
+                    <span id="availability-text" class="text-xs font-medium">Offline</span>
                     <input type="checkbox" id="availability-toggle" onchange="toggleAvailability(this.checked)" class="w-10 h-5 bg-gray-200 rounded-full appearance-none checked:bg-green-500 transition relative cursor-pointer">
                 </div>
             </header>
@@ -47,18 +48,29 @@
                 </div>
 
                 <div id="history-view" class="view hidden">
-                    <div id="summary-card" class="card bg-slate-50 border border-slate-200">
-                        <div class="grid grid-cols-2 gap-4 text-center">
-                            <div><p class="text-xs text-gray-500">Total Orders</p><p id="total-count" class="text-lg font-bold">0</p></div>
-                            <div><p class="text-xs text-gray-500">Total Earnings</p><p id="total-earnings" class="text-lg font-bold text-blue-600">৳0</p></div>
+                    <div class="space-y-3 mb-4">
+                        <input type="text" id="history-search" oninput="filterHistory()" placeholder="Search by name, phone, address..." class="w-full p-3 text-sm border rounded-xl bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        
+                        <div class="flex gap-2 items-center">
+                            <input type="date" id="history-start" onchange="loadHistory()" class="flex-1 p-2 text-xs border rounded-lg bg-white">
+                            <input type="date" id="history-end" onchange="loadHistory()" class="flex-1 p-2 text-xs border rounded-lg bg-white">
+                            <button onclick="clearHistoryFilters()" class="text-xs text-blue-600 font-bold px-2">Clear</button>
                         </div>
-                        <div class="border-t my-3"></div>
+                    </div>
+
+                    <div id="summary-card" class="card bg-blue-50 border border-blue-100 shadow-none">
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                            <div><p class="text-[10px] text-gray-500 uppercase tracking-wider">Total Orders</p><p id="total-count" class="text-xl font-bold">0</p></div>
+                            <div><p class="text-[10px] text-gray-500 uppercase tracking-wider">Total Earnings</p><p id="total-earnings" class="text-xl font-bold text-blue-600">৳0</p></div>
+                        </div>
+                        <div class="border-t border-blue-100 my-3"></div>
                         <div class="grid grid-cols-2 gap-4 text-center">
                             <div><p class="text-[10px] text-gray-400">Collected (COD)</p><p id="cod-earnings" class="text-sm font-bold">৳0</p></div>
                             <div><p class="text-[10px] text-gray-400">Online Paid</p><p id="online-earnings" class="text-sm font-bold text-green-600">৳0</p></div>
                         </div>
                     </div>
-                    <div id="history-container" class="space-y-4"></div>
+                    
+                    <div id="history-container" class="space-y-4 mt-4"></div>
                 </div>
 
                 <div id="profile-view" class="view hidden">
@@ -71,7 +83,7 @@
                 </div>
             </main>
 
-            <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2">
+            <nav class="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2 pb-4 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
                 <button onclick="switchTab('new-orders')" class="tab-btn flex flex-col items-center gap-1 active-tab">
                     <i class="fas fa-list"></i><span class="text-[10px]">New</span>
                 </button>
@@ -91,8 +103,9 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, updateDoc, collection, query, where, onSnapshot, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, collection, query, where, onSnapshot, getDocs, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // Firebase Config (Keep your existing one)
         const firebaseConfig = {
             apiKey: "AIzaSyBzebys-DelOL7qGTygxnJfFFA7QTNhqYM",
             authDomain: "yumzy-bappi.firebaseapp.com",
@@ -109,6 +122,7 @@
 
         let currentUser = null;
         let riderProfile = null;
+        let allHistoryOrders = []; // Cached for searching
 
         onAuthStateChanged(auth, async (user) => {
             currentUser = user;
@@ -119,12 +133,8 @@
                     riderProfile = docSnap.data();
                     showScreen('main-screen');
                     initRiderApp();
-                } else {
-                    alert("Rider profile not found. Please create one in the mobile app.");
                 }
-            } else {
-                showScreen('auth-screen');
-            }
+            } else { showScreen('auth-screen'); }
         });
 
         function initRiderApp() {
@@ -142,134 +152,142 @@
             document.getElementById('availability-text').innerText = riderProfile.isAvailable ? 'Online' : 'Offline';
         }
 
-        // Logic to construct full address exactly like Mobile App
-        function formatAddress(order) {
-            return `Building: ${order.building || ''}, Floor: ${order.floor || ''}, Room: ${order.room || ''}<br>${order.userSubLocation || ''}, ${order.userBaseLocation || ''}`;
+        // Logic matching DeliveryHistoryScreen.kt Calculations
+        async function loadHistory() {
+            const startVal = document.getElementById('history-start').value;
+            const endVal = document.getElementById('history-end').value;
+
+            let q = query(
+                collection(db, "orders"),
+                where("riderId", "==", currentUser.uid),
+                where("orderStatus", "==", "Delivered"),
+                orderBy("createdAt", "desc")
+            );
+
+            const snap = await getDocs(q);
+            allHistoryOrders = snap.docs.map(d => ({id: d.id, ...d.data()}));
+            
+            // Client-side date filtering (more reliable than Firestore range queries with multiple where clauses)
+            if (startVal || endVal) {
+                const start = startVal ? new Date(startVal).setHours(0,0,0,0) : 0;
+                const end = endVal ? new Date(endVal).setHours(23,59,59,999) : Infinity;
+                
+                allHistoryOrders = allHistoryOrders.filter(o => {
+                    const time = o.createdAt.toDate().getTime();
+                    return time >= start && time <= end;
+                });
+            }
+
+            filterHistory(); // Applies search text and renders UI
         }
 
-        // Logic to render Order Card with all missing info
-        function renderOrderCard(d, container, type) {
-            const order = d.data();
-            const id = d.id;
-            const fullAddress = formatAddress(order);
-            const dateStr = order.createdAt?.toDate().toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }) || '';
+        window.filterHistory = () => {
+            const search = document.getElementById('history-search').value.toLowerCase();
+            const container = document.getElementById('history-container');
+            
+            const filtered = allHistoryOrders.filter(o => 
+                o.userName.toLowerCase().includes(search) || 
+                o.userPhone.includes(search) || 
+                o.restaurantName.toLowerCase().includes(search) ||
+                (o.userBaseLocation || "").toLowerCase().includes(search)
+            );
 
-            // Mapping Items with Mini Restaurant Names and Partner Status
-            const itemsHtml = order.items.map(item => {
-                const miniRes = item.miniResName ? `<span class="text-blue-500">(${item.miniResName})</span>` : '';
-                const statusColor = item.partnerStatus === 'Ready' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700';
-                const statusBadge = item.partnerStatus ? `<span class="status-pill ${statusColor} ml-2">${item.partnerStatus}</span>` : '';
-                return `<li class="mb-1">${item.quantity}x ${item.itemName} ${miniRes} ${statusBadge}</li>`;
-            }).join('');
+            let total = 0, cod = 0, online = 0;
+            container.innerHTML = filtered.length === 0 ? '<p class="text-center py-10 text-gray-400 text-sm">No history found matching filters</p>' : '';
+            
+            filtered.forEach(order => {
+                total += order.totalPrice;
+                if(order.payment === 'COD') cod += order.totalPrice;
+                else online += order.totalPrice;
+                renderOrderCard(order, container, 'history');
+            });
 
+            // Update Summary Card matching SummaryCard Compose function
+            document.getElementById('total-count').innerText = filtered.length;
+            document.getElementById('total-earnings').innerText = `৳${total.toFixed(2)}`;
+            document.getElementById('cod-earnings').innerText = `৳${cod.toFixed(1)}`;
+            document.getElementById('online-earnings').innerText = `৳${online.toFixed(1)}`;
+        }
+
+        window.clearHistoryFilters = () => {
+            document.getElementById('history-start').value = '';
+            document.getElementById('history-end').value = '';
+            document.getElementById('history-search').value = '';
+            loadHistory();
+        }
+
+        function renderOrderCard(order, container, type) {
+            const dateStr = order.createdAt?.toDate().toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short', year: 'numeric' }) || '';
+            const address = `Building: ${order.building || ''}, Floor: ${order.floor || ''}, Room: ${order.room || ''}<br>${order.userSubLocation || ''}, ${order.userBaseLocation || ''}`;
+            
             const card = document.createElement('div');
             card.className = 'card';
             card.innerHTML = `
                 <div class="flex justify-between items-start border-b pb-2 mb-3">
                     <div>
                         <h3 class="font-bold text-gray-900">${order.restaurantName}</h3>
-                        <p class="text-[10px] text-gray-400">${dateStr}</p>
+                        <p class="text-[10px] text-gray-400">PICKED UP FROM</p>
                     </div>
                     ${type !== 'history' ? `
                         <div class="flex gap-2">
                             <a href="tel:${order.userPhone}" class="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100"><i class="fas fa-phone-alt"></i></a>
                             <a href="https://wa.me/88${order.userPhone.replace(/\D/g,'')}" target="_blank" class="w-9 h-9 rounded-full bg-green-50 flex items-center justify-center text-green-600 border border-green-100"><i class="fab fa-whatsapp"></i></a>
                         </div>
-                    ` : ''}
+                    ` : '<i class="fas fa-check-circle text-green-500 text-lg"></i>'}
                 </div>
                 
                 <div class="space-y-3 mb-4">
                     <div class="flex gap-3">
-                        <i class="fas fa-user text-gray-300 mt-1"></i>
-                        <div>
-                            <p class="text-xs text-gray-400 uppercase font-bold tracking-wider">Customer</p>
-                            <p class="text-sm font-semibold">${order.userName} (${order.userPhone})</p>
-                        </div>
+                        <i class="fas fa-user text-gray-300 mt-1 text-sm"></i>
+                        <div><p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Customer</p><p class="text-xs font-semibold">${order.userName} (${order.userPhone})</p></div>
                     </div>
                     <div class="flex gap-3">
-                        <i class="fas fa-map-marker-alt text-red-300 mt-1"></i>
-                        <div>
-                            <p class="text-xs text-gray-400 uppercase font-bold tracking-wider">Deliver To</p>
-                            <p class="text-sm text-gray-700 leading-tight">${fullAddress}</p>
-                        </div>
+                        <i class="fas fa-map-marker-alt text-red-300 mt-1 text-sm"></i>
+                        <div><p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Delivered To</p><p class="text-xs text-gray-600 leading-tight">${address}</p></div>
                     </div>
                 </div>
 
                 <div class="bg-gray-50 p-3 rounded-lg mb-4">
-                    <p class="text-xs font-bold text-gray-400 uppercase mb-2">Items</p>
-                    <ul class="text-xs text-gray-600 list-none">${itemsHtml}</ul>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Items</p>
+                    <ul class="text-[11px] text-gray-600 space-y-1">
+                        ${order.items.map(i => `<li>• ${i.quantity}x ${i.itemName} ${i.miniResName ? `<span class="text-blue-500">(${i.miniResName})</span>`:''}</li>`).join('')}
+                    </ul>
                 </div>
 
-                <div class="flex justify-between items-center mb-4">
-                    <span class="text-sm font-bold text-gray-700">Total to Collect:</span>
-                    <span class="text-lg font-black text-blue-600">৳${order.totalPrice} <small class="text-[10px] text-gray-400">(${order.payment})</small></span>
+                <div class="flex justify-between items-center ${type === 'history' ? 'border-t pt-3' : ''}">
+                    <span class="text-xs font-bold text-gray-500">Order Total:</span>
+                    <span class="text-base font-black text-blue-600">৳${order.totalPrice} <small class="text-[10px] text-gray-400">(${order.payment})</small></span>
                 </div>
                 
-                <div id="btn-container-${id}">
-                    ${getActionButtons(id, order.orderStatus, type)}
-                </div>
+                ${type === 'history' ? `<p class="text-center text-[9px] text-gray-400 mt-3 italic">Delivered on ${dateStr}</p>` : getActionButtons(order.id, order.orderStatus)}
             `;
             container.appendChild(card);
         }
 
-        // Logic for Detailed History Summary
-        async function loadHistory() {
-            const q = query(
-                collection(db, "orders"),
-                where("riderId", "==", currentUser.uid),
-                where("orderStatus", "==", "Delivered"),
-                orderBy("createdAt", "desc")
-            );
-            
-            const snap = await getDocs(q);
-            const container = document.getElementById('history-container');
-            let total = 0, cod = 0, online = 0;
-            
-            container.innerHTML = '';
-            snap.forEach(d => {
-                const order = d.data();
-                total += order.totalPrice;
-                if(order.payment === 'COD') cod += order.totalPrice;
-                else online += order.totalPrice;
-                renderOrderCard(d, container, 'history');
-            });
-
-            document.getElementById('total-count').innerText = snap.size;
-            document.getElementById('total-earnings').innerText = `৳${total.toFixed(1)}`;
-            document.getElementById('cod-earnings').innerText = `৳${cod.toFixed(1)}`;
-            document.getElementById('online-earnings').innerText = `৳${online.toFixed(1)}`;
-        }
-
-        function getActionButtons(id, status, type) {
-            if (type === 'history') return `<div class="text-center py-1 border-t mt-2"><span class="text-green-600 text-xs font-bold italic">✓ Delivered successfully</span></div>`;
-            if (status === 'Pending') return `<button onclick="updateStatus('${id}', 'Accepted')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-lg transition">Accept Order</button>`;
-            if (status === 'Accepted') return `<button onclick="updateStatus('${id}', 'On the way')" class="w-full bg-orange-500 text-white py-3 rounded-xl font-bold">Mark as Picked Up</button>`;
-            if (status === 'On the way') return `<button onclick="updateStatus('${id}', 'Delivered')" class="w-full bg-green-600 text-white py-3 rounded-xl font-bold">Mark as Delivered</button>`;
+        function getActionButtons(id, status) {
+            if (status === 'Pending') return `<button onclick="updateStatus('${id}', 'Accepted')" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold mt-4">Accept Order</button>`;
+            if (status === 'Accepted') return `<button onclick="updateStatus('${id}', 'On the way')" class="w-full bg-orange-500 text-white py-3 rounded-xl font-bold mt-4">Mark as Picked Up</button>`;
+            if (status === 'On the way') return `<button onclick="updateStatus('${id}', 'Delivered')" class="w-full bg-green-600 text-white py-3 rounded-xl font-bold mt-4">Mark as Delivered</button>`;
             return '';
         }
 
-        window.updateStatus = async (orderId, status) => {
-            const updates = { orderStatus: status };
-            if (status === 'Accepted') {
-                updates.riderId = currentUser.uid;
-                updates.riderName = currentUser.displayName;
-            }
-            try {
-                await updateDoc(doc(db, "orders", orderId), updates);
-                if(status === 'Delivered') loadHistory();
-            } catch(e) { alert("Error updating order: " + e.message); }
-        };
-
+        // Global functions for buttons
         window.login = () => signInWithPopup(auth, provider);
         window.logout = () => signOut(auth);
         window.toggleAvailability = (s) => updateDoc(doc(db, "riders", currentUser.uid), { isAvailable: s });
+        window.updateStatus = async (orderId, status) => {
+            const updates = { orderStatus: status };
+            if (status === 'Accepted') { updates.riderId = currentUser.uid; updates.riderName = currentUser.displayName; }
+            await updateDoc(doc(db, "orders", orderId), updates);
+            if(status === 'Delivered') loadHistory();
+        };
 
         function listenToNewOrders() {
             const q = query(collection(db, "orders"), where("orderStatus", "==", "Pending"), where("userBaseLocation", "in", riderProfile.serviceableLocations));
             onSnapshot(q, (s) => {
                 const c = document.getElementById('orders-container');
-                c.innerHTML = s.empty ? '<p class="text-center py-10 text-gray-400">No new orders in your area</p>' : '';
-                s.forEach(d => renderOrderCard(d, c, 'new'));
+                c.innerHTML = s.empty ? '<div class="text-center py-20 text-gray-400"><i class="fas fa-box-open text-4xl mb-3 block"></i>No new orders</div>' : '';
+                s.forEach(d => renderOrderCard({id: d.id, ...d.data()}, c, 'new'));
             });
         }
 
@@ -277,8 +295,8 @@
             const q = query(collection(db, "orders"), where("riderId", "==", currentUser.uid), where("orderStatus", "in", ["Accepted", "On the way"]));
             onSnapshot(q, (s) => {
                 const c = document.getElementById('active-container');
-                c.innerHTML = s.empty ? '<p class="text-center py-10 text-gray-400">No active tasks</p>' : '';
-                s.forEach(d => renderOrderCard(d, c, 'active'));
+                c.innerHTML = s.empty ? '<p class="text-center py-20 text-gray-400">No active deliveries</p>' : '';
+                s.forEach(d => renderOrderCard({id: d.id, ...d.data()}, c, 'active'));
             });
         }
 
@@ -288,6 +306,7 @@
             document.getElementById(`${tab}-view`).classList.remove('hidden');
             event.currentTarget.classList.add('active-tab', 'text-blue-600');
             document.getElementById('header-title').innerText = tab.replace('-', ' ').toUpperCase();
+            if(tab === 'history') loadHistory();
         };
 
         function showScreen(id) {
